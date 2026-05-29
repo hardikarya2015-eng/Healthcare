@@ -62,7 +62,8 @@ const placeOrder = async (req, res) => {
   if (orderError) return errorResponse(res, orderError.message, 500);
 
   // Insert order items
-  await supabase.from('order_items').insert(orderItems.map(i => ({ ...i, order_id: order.id })));
+  const { error: itemsError } = await supabase.from('order_items').insert(orderItems.map(i => ({ ...i, order_id: order.id })));
+  if (itemsError) console.error('order_items insert failed:', itemsError.message);
 
   // Deduct stock
   for (const item of cart.cart_items) {
@@ -95,15 +96,22 @@ const getMyOrders = async (req, res) => {
 };
 
 const getOrderById = async (req, res) => {
-  const { data, error } = await supabase
+  const { data: order, error } = await supabase
     .from('orders')
-    .select('*, items:order_items(*), address:addresses(*)')
+    .select('*, address:addresses(*)')
     .eq('id', req.params.id)
     .eq('user_id', req.user.id)
     .single();
 
-  if (error || !data) return errorResponse(res, 'Order not found', 404);
-  return successResponse(res, data);
+  if (error || !order) return errorResponse(res, 'Order not found', 404);
+
+  const { data: items } = await supabase
+    .from('order_items')
+    .select('*')
+    .eq('order_id', req.params.id);
+
+  order.items = items || [];
+  return successResponse(res, order);
 };
 
 const cancelOrder = async (req, res) => {
