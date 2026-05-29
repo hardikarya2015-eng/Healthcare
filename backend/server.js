@@ -19,10 +19,15 @@ const { requestLogger }  = require('./middleware/logger.middleware');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Allow any localhost origin in dev
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || origin.startsWith('http://localhost')) {
+    if (!origin || ALLOWED_ORIGINS.some((o) => origin.startsWith(o))) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
