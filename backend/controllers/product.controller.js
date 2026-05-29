@@ -1,4 +1,4 @@
-const supabase = require('../config/supabase');
+const { supabase } = require('../config/supabase');
 const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
 
 const getProducts = async (req, res) => {

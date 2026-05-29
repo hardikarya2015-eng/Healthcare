@@ -1,4 +1,4 @@
-const supabase = require('../config/supabase');
+const { supabase } = require('../config/supabase');
 
 /**
  * Verifies the Supabase JWT token from the Authorization header.
@@ -20,6 +20,7 @@ const authenticate = async (req, res, next) => {
   }
 
   req.user = user;
+  req.token = token;
   next();
 };
 

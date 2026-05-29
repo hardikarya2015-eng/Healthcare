@@ -1,4 +1,4 @@
-const supabase = require('../config/supabase');
+const { supabase, createUserClient } = require('../config/supabase');
 const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
 
 const DELIVERY_CHARGE = 49;
@@ -7,11 +7,12 @@ const FREE_DELIVERY_THRESHOLD = 499;
 const placeOrder = async (req, res) => {
   const userId = req.user.id;
   const { address_id, payment_method = 'cod', payment_intent_id, prescription_id, notes } = req.body;
+  const db = createUserClient(req.token);
 
   if (!address_id) return errorResponse(res, 'Delivery address required', 400);
 
   // Fetch cart with items
-  const { data: cart } = await supabase
+  const { data: cart } = await db
     .from('carts')
     .select(`id, cart_items(quantity, products(id, name, price, discounted_price, discount_percent, image_url, prescription_required, inventory(stock_quantity)))`)
     .eq('user_id', userId)
@@ -46,11 +47,10 @@ const placeOrder = async (req, res) => {
 
   const delivery_charge = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
   const total_amount = subtotal + delivery_charge;
-
-  // Create order
   const payment_status = payment_method === 'online' && payment_intent_id ? 'paid' : 'pending';
 
-  const { data: order, error: orderError } = await supabase
+  // Create order
+  const { data: order, error: orderError } = await db
     .from('orders')
     .insert({
       user_id: userId, address_id, prescription_id, payment_method, payment_intent_id,
@@ -62,27 +62,24 @@ const placeOrder = async (req, res) => {
   if (orderError) return errorResponse(res, orderError.message, 500);
 
   // Insert order items
-  const { data: insertedItems, error: itemsError } = await supabase
+  const { error: itemsError } = await db
     .from('order_items')
-    .insert(orderItems.map(i => ({ ...i, order_id: order.id })))
-    .select();
-  if (itemsError) {
-    console.error('order_items insert FAILED:', JSON.stringify(itemsError));
-  } else {
-    console.log(`order_items inserted: ${insertedItems?.length || 0} rows for order ${order.id}`);
-  }
+    .insert(orderItems.map(i => ({ ...i, order_id: order.id })));
+  if (itemsError) console.error('order_items insert FAILED:', itemsError.message);
 
-  // Deduct stock
+  // Deduct stock (admin operation — uses service role)
   for (const item of cart.cart_items) {
     const { data: inv } = await supabase
       .from('inventory').select('stock_quantity').eq('product_id', item.products.id).single();
-    await supabase.from('inventory')
-      .update({ stock_quantity: inv.stock_quantity - item.quantity })
-      .eq('product_id', item.products.id);
+    if (inv) {
+      await supabase.from('inventory')
+        .update({ stock_quantity: inv.stock_quantity - item.quantity })
+        .eq('product_id', item.products.id);
+    }
   }
 
   // Clear cart
-  await supabase.from('cart_items').delete().eq('cart_id', cart.id);
+  await db.from('cart_items').delete().eq('cart_id', cart.id);
 
   return successResponse(res, order, 'Order placed successfully', 201);
 };
@@ -90,8 +87,9 @@ const placeOrder = async (req, res) => {
 const getMyOrders = async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
+  const db = createUserClient(req.token);
 
-  const { data, error, count } = await supabase
+  const { data, error, count } = await db
     .from('orders')
     .select('*, items:order_items(*)', { count: 'exact' })
     .eq('user_id', req.user.id)
@@ -103,7 +101,9 @@ const getMyOrders = async (req, res) => {
 };
 
 const getOrderById = async (req, res) => {
-  const { data: order, error } = await supabase
+  const db = createUserClient(req.token);
+
+  const { data: order, error } = await db
     .from('orders')
     .select('*, address:addresses(*)')
     .eq('id', req.params.id)
@@ -112,27 +112,26 @@ const getOrderById = async (req, res) => {
 
   if (error || !order) return errorResponse(res, 'Order not found', 404);
 
-  const { data: items, error: itemsFetchError } = await supabase
+  const { data: items } = await db
     .from('order_items')
     .select('*')
     .eq('order_id', req.params.id);
-
-  if (itemsFetchError) console.error('order_items fetch FAILED:', JSON.stringify(itemsFetchError));
-  else console.log(`order_items fetched: ${items?.length || 0} rows for order ${req.params.id}`);
 
   order.items = items || [];
   return successResponse(res, order);
 };
 
 const cancelOrder = async (req, res) => {
-  const { data: order } = await supabase
+  const db = createUserClient(req.token);
+
+  const { data: existing } = await db
     .from('orders').select('status').eq('id', req.params.id).eq('user_id', req.user.id).single();
 
-  if (!order) return errorResponse(res, 'Order not found', 404);
-  if (!['placed', 'confirmed'].includes(order.status))
+  if (!existing) return errorResponse(res, 'Order not found', 404);
+  if (!['placed', 'confirmed'].includes(existing.status))
     return errorResponse(res, 'Order cannot be cancelled at this stage', 400);
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('orders')
     .update({ status: 'cancelled' })
     .eq('id', req.params.id)

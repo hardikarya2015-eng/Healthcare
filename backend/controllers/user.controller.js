@@ -1,4 +1,4 @@
-const supabase = require('../config/supabase');
+const { supabase } = require('../config/supabase');
 const { successResponse, errorResponse } = require('../utils/response');
 
 const getProfile = async (req, res) => {

@@ -8,15 +8,18 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.warn('Warning: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set in .env');
 }
 
-// Admin client with service role key - bypasses RLS, use only server-side
+// Admin client — used for auth validation and admin operations
 const supabase = createClient(supabaseUrl || '', supabaseServiceKey || '', {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-  realtime: {
-    transport: ws,
-  },
+  auth: { autoRefreshToken: false, persistSession: false },
+  realtime: { transport: ws },
 });
 
-module.exports = supabase;
+// User-scoped client — sets auth.uid() via the user's JWT so RLS policies work correctly
+const createUserClient = (accessToken) =>
+  createClient(supabaseUrl || '', supabaseServiceKey || '', {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    auth: { autoRefreshToken: false, persistSession: false },
+    realtime: { transport: ws },
+  });
+
+module.exports = { supabase, createUserClient };

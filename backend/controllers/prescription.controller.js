@@ -1,6 +1,6 @@
 const { createWorker } = require('tesseract.js');
 const Fuse = require('fuse.js');
-const supabase = require('../config/supabase');
+const { supabase } = require('../config/supabase');
 const { successResponse, errorResponse } = require('../utils/response');
 
 // ─── OCR ─────────────────────────────────────────────────────────────────────

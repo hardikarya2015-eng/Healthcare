@@ -266,9 +266,11 @@ CREATE POLICY "Cart items: own cart" ON cart_items FOR ALL
 CREATE POLICY "Orders: own rows" ON orders FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Orders: customer insert" ON orders FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Order items: readable if own order
+-- Order items: readable and insertable if own order
 CREATE POLICY "Order items: own order" ON order_items FOR SELECT
   USING (order_id IN (SELECT id FROM orders WHERE user_id = auth.uid()));
+CREATE POLICY "Order items: customer insert" ON order_items FOR INSERT
+  WITH CHECK (order_id IN (SELECT id FROM orders WHERE user_id = auth.uid()));
 
 -- Prescriptions: own rows
 CREATE POLICY "Prescriptions: own rows" ON prescriptions FOR ALL USING (auth.uid() = user_id);
