@@ -75,6 +75,12 @@ const parseMedicines = (rawText) => {
     if (name.length < 3 || /^\d+$/.test(name) || !/[a-zA-Z]{3,}/.test(name)) continue;
 
     name = name.replace(/\b\w/g, (c) => c.toUpperCase());
+
+    // Skip if name is just a medicine form word with no actual drug name
+    const FORM_WORDS = new Set(['tablet', 'tablets', 'capsule', 'capsules', 'syrup', 'injection',
+      'tab', 'cap', 'syp', 'drops', 'gel', 'cream', 'ointment', 'suspension', 'solution']);
+    if (FORM_WORDS.has(name.toLowerCase())) continue;
+
     medicines.push({ medicine_name: name, dosage, frequency, duration, indication, raw_line: line });
   }
 
@@ -147,7 +153,9 @@ const analyze = async (req, res) => {
     }
 
     // 2. Parse medicine lines
+    console.log('--- OCR RAW TEXT ---\n', rawText, '\n--- END OCR ---');
     const medicines = parseMedicines(rawText);
+    console.log('Parsed medicines:', JSON.stringify(medicines, null, 2));
 
     // 3. Load products for Fuse.js matching
     const { data: products } = await supabase
