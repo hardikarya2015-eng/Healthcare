@@ -131,11 +131,14 @@ const cancelOrder = async (req, res) => {
   if (!['placed', 'confirmed'].includes(existing.status))
     return errorResponse(res, 'Order cannot be cancelled at this stage', 400);
 
-  const { data, error } = await db
+  // Use service role for the update since there is no UPDATE RLS policy on orders
+  const { data, error } = await supabase
     .from('orders')
     .update({ status: 'cancelled' })
     .eq('id', req.params.id)
-    .select().single();
+    .eq('user_id', req.user.id)
+    .select()
+    .single();
 
   if (error) return errorResponse(res, error.message, 400);
   return successResponse(res, data, 'Order cancelled');
