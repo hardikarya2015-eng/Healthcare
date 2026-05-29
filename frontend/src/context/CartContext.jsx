@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { cartService } from '../services/cart.service';
 import { useAuth } from './AuthContext';
+import api from '../services/api';
 import toast from 'react-hot-toast';
 
 const CartContext = createContext(null);
@@ -12,15 +13,24 @@ export const CartProvider = ({ children }) => {
   const [rxVerified, setRxVerified] = useState(false);
 
   const fetchCart = useCallback(async () => {
-    if (!user) { setCart(null); return; }
+    if (!user) { setCart(null); setRxVerified(false); return; }
     setLoading(true);
     try {
       const { data } = await cartService.getCart();
       const cartData = data.data;
       setCart(cartData);
-      // Reset prescription verification if cart has no Rx items
+
       const hasRxItems = cartData?.cart_items?.some((i) => i.products?.prescription_required);
-      if (!hasRxItems) setRxVerified(false);
+      if (!hasRxItems) {
+        setRxVerified(false);
+      } else {
+        // Auto-verify if user already has an uploaded prescription on file
+        try {
+          const rxRes = await api.get('/api/prescriptions');
+          const prescriptions = rxRes.data?.data || [];
+          if (prescriptions.length > 0) setRxVerified(true);
+        } catch { /* silent — user will just see the upload gate */ }
+      }
     } catch {
       setCart(null);
     } finally {
