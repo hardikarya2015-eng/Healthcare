@@ -103,8 +103,9 @@ const Profile = () => {
           </div>
           <div>
             <label className="label">Phone</label>
-            <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="input" placeholder="+91 99999 00000" />
+            <input type="tel" value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              className="input" placeholder="10-digit mobile number" maxLength={10} />
           </div>
           <div>
             <label className="label">Email</label>
@@ -141,8 +142,9 @@ const Profile = () => {
               </div>
               <div>
                 <label className="label text-xs">Phone</label>
-                <input value={addrForm.phone} onChange={(e) => setAddrForm({ ...addrForm, phone: e.target.value })}
-                  className="input text-sm py-1.5" placeholder="+91..." />
+                <input value={addrForm.phone}
+                  onChange={(e) => setAddrForm({ ...addrForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                  className="input text-sm py-1.5" placeholder="10-digit number" maxLength={10} />
               </div>
             </div>
             <div>

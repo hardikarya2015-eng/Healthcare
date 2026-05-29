@@ -122,7 +122,7 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
             <Logo size={34} />
             <span className="text-xl font-bold text-gray-900 tracking-tight">
-              Pharm<span className="text-teal-600">Easy</span>
+              Medi<span className="text-teal-600">Swift</span>
             </span>
           </Link>
 

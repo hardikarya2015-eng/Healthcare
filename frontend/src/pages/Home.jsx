@@ -204,7 +204,7 @@ const Home = () => {
       <section className="py-16 bg-gray-50 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold text-gray-900">Why Choose PharmEasy?</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Why Choose MediSwift?</h2>
             <p className="text-gray-400 text-sm mt-2">Your health is our priority</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">

@@ -11,7 +11,7 @@ const Footer = () => (
           <div className="flex items-center gap-2.5 mb-4">
             <Logo size={32} />
             <span className="text-xl font-bold text-white tracking-tight">
-              Pharm<span className="text-teal-400">Easy</span>
+              Medi<span className="text-teal-400">Swift</span>
             </span>
           </div>
           <p className="text-sm leading-relaxed text-gray-500 mb-5">
@@ -76,7 +76,7 @@ const Footer = () => (
       </div>
 
       <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-600">
-        <p>&copy; {new Date().getFullYear()} PharmEasy Clone. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} MediSwift. All rights reserved.</p>
         <p>Built with React + Supabase + TailwindCSS</p>
       </div>
     </div>

@@ -30,6 +30,7 @@ const PrescriptionGate = ({ onVerified }) => {
   const handleCallbackRequest = (e) => {
     e.preventDefault();
     if (!phone.trim()) return toast.error('Please enter your phone number');
+    if (phone.length !== 10) return toast.error('Phone number must be 10 digits');
     setCallbackRequested(true);
     onVerified(); // allow checkout since doctor is reviewing
   };
@@ -180,8 +181,9 @@ const PrescriptionGate = ({ onVerified }) => {
                     <input
                       type="tel"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="Enter your phone number"
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      placeholder="10-digit mobile number"
+                      maxLength={10}
                       className="flex-1 text-sm border border-blue-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-400 bg-white"
                       required
                     />

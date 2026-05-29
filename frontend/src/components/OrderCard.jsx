@@ -57,11 +57,16 @@ const OrderCard = ({ order, onCancel }) => {
       )}
 
       {/* Items preview */}
-      <div className="space-y-1 mb-4">
+      <div className="space-y-2 mb-4">
         {order_items?.slice(0, 3).map((item) => (
-          <div key={item.id} className="flex justify-between text-sm text-gray-600">
-            <span className="truncate max-w-[70%]">{item.product_name} × {item.quantity}</span>
-            <span>{formatPrice(item.total_price)}</span>
+          <div key={item.id} className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="w-9 h-9 flex-shrink-0 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center overflow-hidden">
+              {item.product_image
+                ? <img src={item.product_image} alt={item.product_name} className="w-full h-full object-contain" />
+                : <span className="text-lg">💊</span>}
+            </div>
+            <span className="truncate flex-1">{item.product_name} × {item.quantity}</span>
+            <span className="flex-shrink-0">{formatPrice(item.total_price)}</span>
           </div>
         ))}
         {order_items?.length > 3 && (

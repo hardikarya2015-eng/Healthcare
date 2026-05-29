@@ -130,8 +130,9 @@ const Checkout = () => {
                   </div>
                   <div>
                     <label className="label text-xs">Phone</label>
-                    <input value={newAddr.phone} onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })}
-                      className="input text-sm py-1.5" placeholder="+91..." required />
+                    <input value={newAddr.phone}
+                      onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                      className="input text-sm py-1.5" placeholder="10-digit number" maxLength={10} required />
                   </div>
                 </div>
                 <div>

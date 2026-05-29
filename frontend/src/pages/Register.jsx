@@ -66,7 +66,7 @@ const Register = () => {
     >
       <div className="text-center mb-8">
         <h1 className="text-3xl font-extrabold text-gray-900 mb-1">Create account</h1>
-        <p className="text-gray-500 text-sm">Join PharmEasy for fast medicine delivery</p>
+        <p className="text-gray-500 text-sm">Join MediSwift for fast medicine delivery</p>
       </div>
 
       <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8">
@@ -93,8 +93,9 @@ const Register = () => {
 
           <div>
             <label className="label">Phone <span className="text-gray-400 font-normal">(optional)</span></label>
-            <input name="phone" type="tel" value={form.phone} onChange={handleChange}
-              className="input" placeholder="+91 99999 00000" autoComplete="tel" />
+            <input name="phone" type="tel" value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              className="input" placeholder="10-digit mobile number" autoComplete="tel" maxLength={10} />
           </div>
 
           <div>

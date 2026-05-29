@@ -36,7 +36,7 @@ const Login = () => {
     >
       <div className="text-center mb-8">
         <h1 className="text-3xl font-extrabold text-gray-900 mb-1">Welcome back</h1>
-        <p className="text-gray-500 text-sm">Sign in to continue to PharmEasy</p>
+        <p className="text-gray-500 text-sm">Sign in to continue to MediSwift</p>
       </div>
 
       <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8">
