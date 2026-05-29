@@ -17,11 +17,12 @@ const extractTextFromImage = async (buffer) => {
 
 // ─── Medicine Parser ──────────────────────────────────────────────────────────
 
-const FREQUENCY_RE = /\b(OD|BD|TDS|QID|TID|SOS|PRN|HS|STAT|QHS|QD|BID|once daily|twice daily|thrice daily)\b/i;
-const DOSAGE_RE    = /\b(\d+(?:\.\d+)?\s*(?:mg|mcg|ml|g|gm|iu|units?))\b/i;
-const DURATION_RE  = /\bx?\s*(\d+\s*(?:days?|weeks?|months?))\b/i;
-const PREFIX_RE    = /^(?:tab(?:let)?s?\.?\s*|cap(?:sule)?s?\.?\s*|inj(?:ection)?\.?\s*|syp\.?\s*|syr\.?\s*|syrup\.?\s*|oint(?:ment)?\.?\s*|drops?\.?\s*|gel\.?\s*|cream\.?\s*|susp(?:ension)?\.?\s*)/i;
-const TSP_RE       = /\b\d+\s*(?:tsp|teaspoon|tablespoon|tbsp|ml)\b/gi;
+const FREQUENCY_RE  = /\b(OD|BD|TDS|QID|TID|SOS|PRN|HS|STAT|QHS|QD|BID|once daily|twice daily|thrice daily)\b/i;
+const DOSAGE_RE     = /\b(\d+(?:\.\d+)?\s*(?:mg|mcg|ml|g|gm|iu|units?))\b/i;
+const DURATION_RE   = /\bx?\s*(\d+\s*(?:days?|weeks?|months?))\b/i;
+const PREFIX_RE     = /^(?:tab(?:let)?s?\.?\s*|cap(?:sule)?s?\.?\s*|inj(?:ection)?\.?\s*|syp\.?\s*|syr\.?\s*|syrup\.?\s*|oint(?:ment)?\.?\s*|drops?\.?\s*|gel\.?\s*|cream\.?\s*|susp(?:ension)?\.?\s*)/i;
+const TSP_RE        = /\b\d+\s*(?:tsp|teaspoon|tablespoon|tbsp|ml)\b/gi;
+const INDICATION_RE = /\bfor\s+(cough|fever|pain|cold|allergy|infection|diabetes|hypertension|acidity|sleep|anxiety|depression|inflammation|nausea|vomiting|diarrhea|constipation|asthma|thyroid)\b/i;
 
 const parseMedicines = (rawText) => {
   const lines = rawText
@@ -44,16 +45,16 @@ const parseMedicines = (rawText) => {
     const hasFreq   = FREQUENCY_RE.test(line);
     if (!hasPrefix && !hasDosage && !hasFreq) continue;
 
-    const dosage    = line.match(DOSAGE_RE)?.[1]?.trim() || null;
-    const frequency = line.match(FREQUENCY_RE)?.[1]?.toUpperCase() || null;
-    const duration  = line.match(DURATION_RE)?.[1]?.trim() || null;
+    const dosage     = line.match(DOSAGE_RE)?.[1]?.trim() || null;
+    const frequency  = line.match(FREQUENCY_RE)?.[1]?.toUpperCase() || null;
+    const duration   = line.match(DURATION_RE)?.[1]?.trim() || null;
+    const indication = line.match(INDICATION_RE)?.[1]?.toLowerCase() || null;
 
     let name = line
       .replace(/^\d+[\.\)]\s*/, '')       // remove "1. " numbering
       .replace(PREFIX_RE, '')              // remove Tab/Cap/Syp prefix at start
       // Handle OCR noise word before prefix e.g. "Yo Tab. Azithromycin"
       .replace(/^[a-zA-Z]{1,3}\s+/i, (m, offset, str) => {
-        // Only strip if what follows looks like a medicine form prefix
         return /^(?:tab|cap|syp|inj|syrup|oint|drop|gel)/i.test(str.slice(m.length)) ? '' : m;
       })
       .replace(PREFIX_RE, '')              // strip prefix again after noise removal
@@ -74,7 +75,7 @@ const parseMedicines = (rawText) => {
     if (name.length < 3 || /^\d+$/.test(name) || !/[a-zA-Z]{3,}/.test(name)) continue;
 
     name = name.replace(/\b\w/g, (c) => c.toUpperCase());
-    medicines.push({ medicine_name: name, dosage, frequency, duration, raw_line: line });
+    medicines.push({ medicine_name: name, dosage, frequency, duration, indication, raw_line: line });
   }
 
   return medicines;
@@ -97,22 +98,33 @@ const matchWithFuse = (medicines, products) => {
 
   const fuse = new Fuse(products, fuseOptions);
 
-  return medicines.map((med) => {
-    const hits = fuse.search(med.medicine_name);
-
-    const matches = hits.slice(0, 5).map((hit) => {
+  const scoreHits = (hits, queryLower) =>
+    hits.slice(0, 5).map((hit) => {
       const p = hit.item;
-      const score = 1 - (hit.score ?? 0);             // convert to 0-1 confidence
+      const score = 1 - (hit.score ?? 0);
       const nameLower = p.name.toLowerCase();
-      const queryLower = med.medicine_name.toLowerCase();
-
       let match_type = 'alternative';
       if (nameLower.includes(queryLower) || queryLower.includes(nameLower.split(' ')[0])) {
         match_type = score > 0.8 ? 'exact' : 'generic';
       }
-
       return { ...p, match_type, score: Math.round(score * 100) };
     });
+
+  return medicines.map((med) => {
+    let hits = fuse.search(med.medicine_name);
+    let matches = scoreHits(hits, med.medicine_name.toLowerCase());
+
+    // If no good match found and we have an indication, fall back to indication search
+    if (matches.length === 0 || matches[0].score < 50) {
+      if (med.indication) {
+        const indicationHits = fuse.search(med.indication);
+        if (indicationHits.length > 0) {
+          const indicationMatches = scoreHits(indicationHits, med.indication);
+          // Mark these as alternatives found via indication
+          matches = indicationMatches.map((m) => ({ ...m, match_type: 'alternative' }));
+        }
+      }
+    }
 
     return {
       prescribed: { ...med, confidence: matches.length > 0 ? matches[0].score / 100 : 0.5 },
