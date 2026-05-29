@@ -107,8 +107,30 @@ const updateInventory = async (req, res) => {
   return successResponse(res, data, 'Inventory updated');
 };
 
+const uploadProductImage = async (req, res) => {
+  if (!req.file) return errorResponse(res, 'No image provided', 400);
+  const { id } = req.params;
+
+  const ext = req.file.originalname.split('.').pop() || 'jpg';
+  const path = `products/${id}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('product-images')
+    .upload(path, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
+
+  if (uploadError) return errorResponse(res, uploadError.message, 500);
+
+  const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path);
+
+  const { error: updateError } = await supabase
+    .from('products').update({ image_url: publicUrl }).eq('id', id);
+
+  if (updateError) return errorResponse(res, updateError.message, 500);
+  return successResponse(res, { image_url: publicUrl }, 'Image updated');
+};
+
 module.exports = {
   getStats, getUsers, getOrders, updateOrderStatus,
   getPrescriptions, updatePrescriptionStatus,
-  getInventory, updateInventory,
+  getInventory, updateInventory, uploadProductImage,
 };
