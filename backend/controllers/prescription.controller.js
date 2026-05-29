@@ -20,7 +20,10 @@ const extractTextFromImage = async (buffer) => {
 const FREQUENCY_RE  = /\b(OD|BD|TDS|QID|TID|SOS|PRN|HS|STAT|QHS|QD|BID|once daily|twice daily|thrice daily)\b/i;
 const DOSAGE_RE     = /\b(\d+(?:\.\d+)?\s*(?:mg|mcg|ml|g|gm|iu|units?))\b/i;
 const DURATION_RE   = /\bx?\s*(\d+\s*(?:days?|weeks?|months?))\b/i;
+// Anchored — used for stripping the prefix once we've found it
 const PREFIX_RE     = /^(?:tab(?:let)?s?\.?\s*|cap(?:sule)?s?\.?\s*|inj(?:ection)?\.?\s*|syp\.?\s*|syr\.?\s*|syrup\.?\s*|oint(?:ment)?\.?\s*|drops?\.?\s*|gel\.?\s*|cream\.?\s*|susp(?:ension)?\.?\s*)/i;
+// Non-anchored — used for detecting prefix anywhere (handles OCR noise before the prefix)
+const PREFIX_FIND_RE = /(?:tab(?:let)?s?\.?\s*|cap(?:sule)?s?\.?\s*|inj(?:ection)?\.?\s*|syp\.?\s*|syr\.?\s*|syrup\.?\s*|oint(?:ment)?\.?\s*|drops?\.?\s*|gel\.?\s*|cream\.?\s*|susp(?:ension)?\.?\s*)/i;
 const TSP_RE        = /\b\d+\s*(?:tsp|teaspoon|tablespoon|tbsp|ml)\b/gi;
 const INDICATION_RE = /\bfor\s+(cough|fever|pain|cold|allergy|infection|diabetes|hypertension|acidity|sleep|anxiety|depression|inflammation|nausea|vomiting|diarrhea|constipation|asthma|thyroid)\b/i;
 
@@ -39,10 +42,11 @@ const parseMedicines = (rawText) => {
     // Skip lines that are only frequency + duration with no medicine name e.g. "tid x 5 days"
     if (/^(?:OD|BD|TDS|QID|TID|SOS|HS|BID)\b/i.test(line)) continue;
 
-    // Must have a medicine prefix (Tab/Cap/Syp), a mg/mcg dosage, or a frequency word
-    const hasPrefix = PREFIX_RE.test(line);
-    const hasDosage = DOSAGE_RE.test(line);
-    const hasFreq   = FREQUENCY_RE.test(line);
+    // Detect prefix anywhere in line (handles OCR noise like "Ee y Syp. Alex")
+    const prefixMatch = line.match(PREFIX_FIND_RE);
+    const hasPrefix   = !!prefixMatch;
+    const hasDosage   = DOSAGE_RE.test(line);
+    const hasFreq     = FREQUENCY_RE.test(line);
     if (!hasPrefix && !hasDosage && !hasFreq) continue;
 
     const dosage     = line.match(DOSAGE_RE)?.[1]?.trim() || null;
@@ -50,14 +54,14 @@ const parseMedicines = (rawText) => {
     const duration   = line.match(DURATION_RE)?.[1]?.trim() || null;
     const indication = line.match(INDICATION_RE)?.[1]?.toLowerCase() || null;
 
-    let name = line
+    // If there's OCR noise before the prefix, start from the prefix position
+    const workLine = (prefixMatch && prefixMatch.index > 3)
+      ? line.slice(prefixMatch.index)
+      : line;
+
+    let name = workLine
       .replace(/^\d+[\.\)]\s*/, '')       // remove "1. " numbering
       .replace(PREFIX_RE, '')              // remove Tab/Cap/Syp prefix at start
-      // Handle OCR noise word before prefix e.g. "Yo Tab. Azithromycin"
-      .replace(/^[a-zA-Z]{1,3}\s+/i, (m, offset, str) => {
-        return /^(?:tab|cap|syp|inj|syrup|oint|drop|gel)/i.test(str.slice(m.length)) ? '' : m;
-      })
-      .replace(PREFIX_RE, '')              // strip prefix again after noise removal
       .replace(DOSAGE_RE, '')              // remove dosage
       .replace(FREQUENCY_RE, '')           // remove frequency
       .replace(DURATION_RE, '')            // remove duration
