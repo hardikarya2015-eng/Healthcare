@@ -62,8 +62,15 @@ const placeOrder = async (req, res) => {
   if (orderError) return errorResponse(res, orderError.message, 500);
 
   // Insert order items
-  const { error: itemsError } = await supabase.from('order_items').insert(orderItems.map(i => ({ ...i, order_id: order.id })));
-  if (itemsError) console.error('order_items insert failed:', itemsError.message);
+  const { data: insertedItems, error: itemsError } = await supabase
+    .from('order_items')
+    .insert(orderItems.map(i => ({ ...i, order_id: order.id })))
+    .select();
+  if (itemsError) {
+    console.error('order_items insert FAILED:', JSON.stringify(itemsError));
+  } else {
+    console.log(`order_items inserted: ${insertedItems?.length || 0} rows for order ${order.id}`);
+  }
 
   // Deduct stock
   for (const item of cart.cart_items) {
@@ -105,10 +112,13 @@ const getOrderById = async (req, res) => {
 
   if (error || !order) return errorResponse(res, 'Order not found', 404);
 
-  const { data: items } = await supabase
+  const { data: items, error: itemsFetchError } = await supabase
     .from('order_items')
     .select('*')
     .eq('order_id', req.params.id);
+
+  if (itemsFetchError) console.error('order_items fetch FAILED:', JSON.stringify(itemsFetchError));
+  else console.log(`order_items fetched: ${items?.length || 0} rows for order ${req.params.id}`);
 
   order.items = items || [];
   return successResponse(res, order);
