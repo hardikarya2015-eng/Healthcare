@@ -11,7 +11,7 @@ const AuthLayout = () => (
       <Link to="/" className="flex items-center gap-2.5 w-fit">
         <Logo size={32} />
         <span className="text-xl font-bold text-gray-900 tracking-tight">
-          Pharm<span className="text-teal-600">Easy</span>
+          Medi<span className="text-teal-600">Swift</span>
         </span>
       </Link>
     </div>
