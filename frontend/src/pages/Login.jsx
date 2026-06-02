@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -11,10 +13,33 @@ const Login = () => {
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
   const from = location.state?.from?.pathname || '/';
+
+  const validateEmail = (value) => {
+    if (!value) return 'Email address is required';
+    if (!EMAIL_RE.test(value)) return 'Please enter a valid email address';
+    return '';
+  };
+
+  const handleEmailChange = (e) => {
+    const val = e.target.value;
+    setForm({ ...form, email: val });
+    if (emailTouched) setEmailError(validateEmail(val));
+  };
+
+  const handleEmailBlur = () => {
+    setEmailTouched(true);
+    setEmailError(validateEmail(form.email));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setEmailTouched(true);
+    const err = validateEmail(form.email);
+    if (err) { setEmailError(err); return; }
+
     setLoading(true);
     try {
       const user = await login(form.email, form.password);
@@ -46,12 +71,20 @@ const Login = () => {
             <input
               type="email"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="input"
+              onChange={handleEmailChange}
+              onBlur={handleEmailBlur}
+              className={`input ${emailError ? 'border-red-400 focus:ring-red-400' : ''}`}
               placeholder="you@example.com"
               autoComplete="email"
-              required
             />
+            {emailError && (
+              <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {emailError}
+              </p>
+            )}
           </div>
 
           <div>
