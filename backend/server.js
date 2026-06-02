@@ -41,7 +41,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
 app.get('/health', (req, res) =>
-  res.json({ status: 'ok', service: 'PharmEasy API', timestamp: new Date().toISOString() })
+  res.json({ status: 'ok', service: 'MediSwift API', timestamp: new Date().toISOString() })
 );
 
 app.use('/api/auth',          authRoutes);
@@ -58,5 +58,5 @@ app.use('/api/admin',         adminRoutes);
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 app.use(errorHandler);
 
-app.listen(PORT, () => console.log(`PharmEasy API running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`MediSwift API running on http://localhost:${PORT}`));
 module.exports = app;

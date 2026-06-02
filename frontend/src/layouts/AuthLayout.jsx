@@ -25,7 +25,7 @@ const AuthLayout = () => (
 
     {/* Footer note */}
     <p className="text-center text-xs text-gray-400 py-4">
-      &copy; {new Date().getFullYear()} PharmEasy. Your health, our priority.
+      &copy; {new Date().getFullYear()} MediSwift. Your health, our priority.
     </p>
   </div>
 );
