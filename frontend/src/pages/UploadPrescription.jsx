@@ -145,7 +145,7 @@ const Results = ({ data }) => {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 const UploadPrescription = () => {
-  const { setRxVerified } = useCart();
+  useCart(); // keep cart context connected
   const [dragging, setDragging] = useState(false);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -173,8 +173,6 @@ const UploadPrescription = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setResults(res.data.data);
-      // Mark prescription as verified so the cart doesn't ask again
-      setRxVerified(true);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Analysis failed');
     } finally {
