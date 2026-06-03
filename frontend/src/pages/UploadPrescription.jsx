@@ -7,18 +7,11 @@ import { formatPrice } from '../utils/helpers';
 import { useCart } from '../context/CartContext';
 
 // ─── Match Card ───────────────────────────────────────────────────────────────
-const BADGE = {
-  exact:       { label: 'Exact Match', cls: 'bg-teal-100 text-teal-700' },
-  generic:     { label: 'Generic',     cls: 'bg-blue-100 text-blue-700' },
-  alternative: { label: 'Alternative', cls: 'bg-purple-100 text-purple-700' },
-};
-
 const MatchCard = ({ product }) => {
   const { addToCart } = useCart();
   const [adding, setAdding] = useState(false);
   const inStock = (product.inventory?.stock_quantity ?? 0) > 0;
   const finalPrice = product.discounted_price ?? product.price;
-  const badge = BADGE[product.match_type] || BADGE.alternative;
 
   const handleAdd = async () => { setAdding(true); await addToCart(product.id); setAdding(false); };
 
@@ -35,7 +28,6 @@ const MatchCard = ({ product }) => {
           <Link to={`/products/${product.slug || product.id}`} className="text-sm font-semibold text-gray-900 hover:text-teal-600 line-clamp-2 leading-snug">
             {product.name}
           </Link>
-          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${badge.cls}`}>{badge.label}</span>
         </div>
         {(product.brand || product.manufacturer) && (
           <p className="text-xs text-gray-400 mb-2 truncate">by {product.brand || product.manufacturer}</p>
@@ -67,10 +59,6 @@ const MatchCard = ({ product }) => {
 const FREQ = { OD: 'Once daily', BD: 'Twice daily', TDS: '3× daily', QID: '4× daily', SOS: 'As needed', HS: 'At bedtime' };
 
 const MedicineTag = ({ med }) => {
-  const pct = Math.round((med.confidence ?? 0) * 100);
-  const confCls = pct >= 85 ? 'text-teal-600 bg-teal-50 border-teal-100'
-    : pct >= 65 ? 'text-yellow-600 bg-yellow-50 border-yellow-100'
-    : 'text-red-500 bg-red-50 border-red-100';
   return (
     <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
       <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -84,7 +72,6 @@ const MedicineTag = ({ med }) => {
           {med.generic_name && med.generic_name !== med.medicine_name && (
             <span className="text-xs text-gray-400">({med.generic_name})</span>
           )}
-          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${confCls}`}>{pct}% confidence</span>
         </div>
         <div className="flex gap-3 mt-1 flex-wrap text-xs text-gray-500">
           {med.dosage && <span>{med.dosage}</span>}
