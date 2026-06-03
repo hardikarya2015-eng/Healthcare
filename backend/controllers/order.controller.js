@@ -131,17 +131,16 @@ const cancelOrder = async (req, res) => {
   if (!['placed', 'confirmed'].includes(existing.status))
     return errorResponse(res, 'Order cannot be cancelled at this stage', 400);
 
-  // Use service role for the update since there is no UPDATE RLS policy on orders
-  const { data, error } = await supabase
+  // Use service role for the update (bypasses missing UPDATE RLS policy)
+  // Avoid .single() — if RLS silently returns 0 rows it throws "Cannot coerce to single JSON object"
+  const { error } = await supabase
     .from('orders')
     .update({ status: 'cancelled' })
     .eq('id', req.params.id)
-    .eq('user_id', req.user.id)
-    .select()
-    .single();
+    .eq('user_id', req.user.id);
 
   if (error) return errorResponse(res, error.message, 400);
-  return successResponse(res, data, 'Order cancelled');
+  return successResponse(res, { id: req.params.id, status: 'cancelled' }, 'Order cancelled');
 };
 
 module.exports = { placeOrder, getMyOrders, getOrderById, cancelOrder };

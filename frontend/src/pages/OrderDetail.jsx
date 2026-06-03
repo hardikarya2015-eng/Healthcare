@@ -6,23 +6,56 @@ import { orderService } from '../services/order.service';
 import { formatPrice, formatDate, getOrderStatusColor, getEstimatedDelivery } from '../utils/helpers';
 import { ORDER_STATUS_STEPS } from '../constants';
 
+const CancelModal = ({ onConfirm, onClose, loading }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+    <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+      <div className="flex items-center justify-center w-12 h-12 bg-red-50 rounded-full mx-auto mb-4">
+        <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+        </svg>
+      </div>
+      <h3 className="text-lg font-bold text-gray-900 text-center mb-1">Cancel Order?</h3>
+      <p className="text-sm text-gray-500 text-center mb-6">
+        Are you sure you want to cancel this order? This action cannot be undone.
+      </p>
+      <div className="flex gap-3">
+        <button
+          onClick={onClose}
+          className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          Keep Order
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={loading}
+          className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-colors disabled:opacity-60"
+        >
+          {loading ? 'Cancelling...' : 'Yes, Cancel'}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 const OrderDetail = () => {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   useEffect(() => {
     orderService.getById(id).then((r) => setOrder(r.data?.data)).finally(() => setLoading(false));
   }, [id]);
 
   const handleCancel = async () => {
-    if (!confirm('Cancel this order?')) return;
     setCancelling(true);
     try {
       await orderService.cancel(id);
       setOrder((prev) => ({ ...prev, status: 'cancelled' }));
       toast.success('Order cancelled');
+      setShowCancelModal(false);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not cancel order');
     } finally {
@@ -45,6 +78,14 @@ const OrderDetail = () => {
 
   return (
     <div className="space-y-5">
+      {showCancelModal && (
+        <CancelModal
+          onConfirm={handleCancel}
+          onClose={() => setShowCancelModal(false)}
+          loading={cancelling}
+        />
+      )}
+
       {/* Back */}
       <Link to="/orders" className="text-sm text-teal-600 hover:underline flex items-center gap-1">
         ← Back to Orders
@@ -62,9 +103,9 @@ const OrderDetail = () => {
             {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
           </span>
           {canCancel && (
-            <button onClick={handleCancel} disabled={cancelling}
-              className="text-sm text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-1 rounded-lg transition-colors disabled:opacity-60">
-              {cancelling ? 'Cancelling...' : 'Cancel Order'}
+            <button onClick={() => setShowCancelModal(true)}
+              className="text-sm text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-1 rounded-lg transition-colors">
+              Cancel Order
             </button>
           )}
         </div>
