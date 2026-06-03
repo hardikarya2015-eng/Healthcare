@@ -32,17 +32,6 @@ const CardForm = ({ clientSecret, amount, onSuccess, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Test card hint */}
-      <div className="bg-teal-50 border border-teal-100 rounded-xl px-4 py-3 text-xs text-teal-700 space-y-1">
-        <p className="font-semibold text-teal-800">Demo Mode — use test card</p>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 font-mono">
-          <span>Card number</span><span className="font-bold tracking-wider">4242 4242 4242 4242</span>
-          <span>Expiry</span><span className="font-bold">Any future date (e.g. 12/34)</span>
-          <span>CVC</span><span className="font-bold">Any 3 digits (e.g. 123)</span>
-          <span>ZIP</span><span className="font-bold">Any 5 digits (e.g. 12345)</span>
-        </div>
-      </div>
-
       {/* Stripe CardElement */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Card Details</label>
